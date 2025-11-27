@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 960 540">
+  <defs>
+    <style>
+      .cls-1 {
+        display: none;
+        fill: #fff;
+      }
+
+      .cls-1, .cls-2, .cls-3 {
+        stroke: #b08350;
+      }
+
+      .cls-2 {
+        fill: #37c871;
+        stroke-width: 10px;
+      }
+
+      .cls-3 {
+        fill: #f0f;
+      }
+
+      .cls-4 {
+        stroke: #8b5e3c;
+      }
+    </style>
+  </defs>
+  <!-- Generator: Adobe Illustrator 28.7.10, SVG Export Plug-In . SVG Version: 1.2.0 Build 236)  -->
+  <g>
+    <g id="Layer_1">
+      <rect id="Rectangle_1" class="cls-1" x="-122" y="-98" width="1201.5" height="788.3"/>
+      <polygon id="Shape_1" class="cls-2" points="686 57 686 210 146 210 146 464 688 464 688 350 318 350 318 290 860 290 860 56 686 57"/>
+      <rect id="Rectangle_1-2" data-name="Rectangle_1" class="cls-3" x="726" y="80" width="99.7" height="90.1"/>
+      <circle id="Ellipse_1" class="cls-4" cx="633.9" cy="406.3" r="24.2"/>
+    </g>
+  </g>
+</svg>
