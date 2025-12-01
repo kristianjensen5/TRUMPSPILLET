@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+  <meta charset="UTF-8" />
+  <title>Trump Game Trigger Editor (MVP)</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      color: #111;
+      background: #f5f5f7;
+    }
+    body {
+      display: flex;
+      flex-direction: column;
+    }
+    #app {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 260px 1fr 320px;
+      grid-template-rows: auto 1fr;
+      grid-template-areas:
+        "sidebar toolbar inspector"
+        "sidebar main inspector";
+      height: 100%;
+    }
+    .sidebar {
+      grid-area: sidebar;
+      border-right: 1px solid #ddd;
+      background: #fafafa;
+      padding: 10px;
+      overflow-y: auto;
+    }
+    .toolbar {
+      grid-area: toolbar;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 10px;
+      border-bottom: 1px solid #ddd;
+      background: #fff;
+    }
+    .toolbar label {
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .toolbar input[type="text"] {
+      padding: 4px 6px;
+      border-radius: 4px;
+      border: 1px solid #ccc;
+      font-size: 12px;
+      min-width: 200px;
+    }
+    .toolbar button {
+      padding: 5px 10px;
+      border-radius: 4px;
+      border: 1px solid #ccc;
+      background: #f0f0f0;
+      cursor: pointer;
+      font-size: 12px;
+    }
+    .toolbar button:hover {
+      background: #e4e4e4;
+    }
+    .toolbar #status {
+      margin-left: auto;
+      font-size: 11px;
+      color: #555;
+    }
+    .main {
+      grid-area: main;
+      display: flex;
+      flex-direction: column;
+      padding: 8px;
+      gap: 8px;
+      overflow: hidden;
+    }
+    .preview-and-code {
+      display: grid;
+      grid-template-columns: 1.2fr 1fr;
+      grid-template-rows: 1fr;
+      gap: 8px;
+      height: 100%;
+      min-height: 0;
+    }
+    .preview, .code-editor {
+      background: #fff;
+      border-radius: 8px;
+      border: 1px solid #ddd;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .preview-header, .code-header {
+      padding: 6px 10px;
+      font-size: 12px;
+      font-weight: 600;
+      border-bottom: 1px solid #eee;
+      background: #f8f8fb;
+    }
+    #gameFrame {
+      flex: 1;
+      border: none;
+      background: #222;
+    }
+    #codeText {
+      flex: 1;
+      border: none;
+      resize: none;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 12px;
+      padding: 8px;
+      outline: none;
+      background: #0b1020;
+      color: #e6edf3;
+    }
+    .code-footer {
+      padding: 6px 8px;
+      border-top: 1px solid #222;
+      background: #050814;
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+    .code-footer button {
+      padding: 4px 10px;
+      border-radius: 4px;
+      border: 1px solid #444;
+      background: #1f2937;
+      color: #e6edf3;
+      font-size: 12px;
+      cursor: pointer;
+    }
+    .code-footer button:hover {
+      background: #374151;
+    }
+
+    .inspector {
+      grid-area: inspector;
+      border-left: 1px solid #ddd;
+      background: #fafafa;
+      padding: 10px;
+      overflow-y: auto;
+    }
+    .inspector h2 {
+      font-size: 14px;
+      margin: 0 0 8px;
+    }
+    .inspector-section {
+      margin-bottom: 12px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid #e0e0e0;
+    }
+    .inspector label {
+      display: block;
+      font-size: 11px;
+      margin-bottom: 3px;
+      color: #555;
+    }
+    .inspector input[type="text"],
+    .inspector select,
+    .inspector textarea {
+      width: 100%;
+      padding: 4px 6px;
+      border-radius: 4px;
+      border: 1px solid #ccc;
+      font-size: 12px;
+      font-family: inherit;
+    }
+    .inspector textarea {
+      resize: vertical;
+      min-height: 80px;
+    }
+    .inspector .field-row {
+      margin-bottom: 8px;
+    }
+    .inspector .small {
+      font-size: 11px;
+      color: #777;
+    }
+
+    .sidebar h2 {
+      font-size: 14px;
+      margin-top: 0;
+      margin-bottom: 6px;
+    }
+    .scene-item {
+      margin-bottom: 4px;
+    }
+    .scene-header {
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      padding: 3px 4px;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .scene-header:hover {
+      background: #ececec;
+    }
+    .scene-header span {
+      pointer-events: none;
+    }
+    .scene-header .count {
+      font-size: 10px;
+      color: #666;
+    }
+    .trigger-list {
+      margin: 2px 0 6px 8px;
+      padding-left: 6px;
+      border-left: 1px solid #ddd;
+    }
+    .trigger-item {
+      font-size: 12px;
+      padding: 2px 4px;
+      border-radius: 4px;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .trigger-item span {
+      pointer-events: none;
+    }
+    .trigger-item:hover {
+      background: #ececec;
+    }
+    .trigger-item.active {
+      background: #2563eb;
+      color: #fff;
+    }
+    .trigger-item .type {
+      font-size: 10px;
+      opacity: 0.8;
+    }
+    .sidebar-footer {
+      margin-top: 8px;
+      padding-top: 8px;
+      border-top: 1px solid #ddd;
+      font-size: 11px;
+      color: #666;
+    }
+    .sidebar button {
+      width: 100%;
+      padding: 5px 0;
+      margin-bottom: 4px;
+      border-radius: 4px;
+      border: 1px solid #ccc;
+      background: #f0f0f0;
+      cursor: pointer;
+      font-size: 12px;
+    }
+    .sidebar button:hover {
+      background: #e4e4e4;
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <div class="sidebar">
+      <h2>Scenes & triggers</h2>
+      <div id="sceneList"></div>
+
+      <div class="sidebar-footer">
+        <button id="addTriggerBtn">+ New trigger in scene</button>
+        <div>Vælg en scene og et trigger-id for at redigere.</div>
+      </div>
+    </div>
+
+    <div class="toolbar">
+      <label>
+        Game URL:
+        <input type="text" id="gameUrl" placeholder="fx Trumpspillet.html">
+      </label>
+      <button id="loadGameBtn">Load game</button>
+      <button id="exportBtn">Export triggers.js</button>
+      <span id="status"></span>
+    </div>
+
+    <div class="main">
+      <div class="preview-and-code">
+        <div class="preview">
+          <div class="preview-header">Game preview</div>
+          <iframe id="gameFrame" title="Game preview"></iframe>
+        </div>
+        <div class="code-editor">
+          <div class="code-header">onTrigger(ctx, api)</div>
+          <textarea id="codeText" spellcheck="false"></textarea>
+          <div class="code-footer">
+            <button id="applyCodeBtn">Apply code to trigger</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="inspector">
+      <h2>Trigger inspector</h2>
+      <div id="inspectorContent">Vælg et trigger i venstre side…</div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { triggers as importedTriggers } from './triggers.js';
+
+    // --- Editor state ---
+    const state = {
+      triggers: importedTriggers,
+      currentScene: null,
+      currentTriggerId: null
+    };
+
+    const sceneListEl = document.getElementById('sceneList');
+    const inspectorEl = document.getElementById('inspectorContent');
+    const codeTextEl = document.getElementById('codeText');
+    const statusEl = document.getElementById('status');
+    const gameUrlEl = document.getElementById('gameUrl');
+    const gameFrameEl = document.getElementById('gameFrame');
+
+    const addTriggerBtn = document.getElementById('addTriggerBtn');
+    const loadGameBtn = document.getElementById('loadGameBtn');
+    const exportBtn = document.getElementById('exportBtn');
+    const applyCodeBtn = document.getElementById('applyCodeBtn');
+
+    // --- Helpers ---
+
+    function setStatus(msg) {
+      statusEl.textContent = msg;
+      if (!msg) return;
+      setTimeout(() => {
+        if (statusEl.textContent === msg) statusEl.textContent = '';
+      }, 2500);
+    }
+
+    function renderSceneList() {
+      const scenes = Object.keys(state.triggers);
+      sceneListEl.innerHTML = '';
+
+      scenes.forEach(sceneName => {
+        const sceneTriggers = state.triggers[sceneName] || {};
+        const triggerIds = Object.keys(sceneTriggers);
+
+        const wrapper = document.createElement('div');
+        wrapper.className = 'scene-item';
+
+        const header = document.createElement('div');
+        header.className = 'scene-header';
+        const labelSpan = document.createElement('span');
+        labelSpan.textContent = sceneName;
+        const countSpan = document.createElement('span');
+        countSpan.className = 'count';
+        countSpan.textContent = triggerIds.length;
+
+        header.appendChild(labelSpan);
+        header.appendChild(countSpan);
+
+        const triggerList = document.createElement('div');
+        triggerList.className = 'trigger-list';
+
+        triggerIds.forEach(id => {
+          const trig = sceneTriggers[id];
+          const item = document.createElement('div');
+          item.className = 'trigger-item';
+          if (sceneName === state.currentScene && id === state.currentTriggerId) {
+            item.classList.add('active');
+          }
+
+          const nameSpan = document.createElement('span');
+          nameSpan.textContent = id;
+
+          const typeSpan = document.createElement('span');
+          typeSpan.className = 'type';
+          typeSpan.textContent = trig.type || '';
+
+          item.appendChild(nameSpan);
+          item.appendChild(typeSpan);
+
+          item.addEventListener('click', () => {
+            state.currentScene = sceneName;
+            state.currentTriggerId = id;
+            renderSceneList();
+            renderInspector();
+            loadCode();
+          });
+
+          triggerList.appendChild(item);
+        });
+
+        wrapper.appendChild(header);
+        wrapper.appendChild(triggerList);
+        sceneListEl.appendChild(wrapper);
+      });
+    }
+
+    function renderInspector() {
+      const scene = state.currentScene;
+      const id = state.currentTriggerId;
+
+      if (!scene || !id) {
+        inspectorEl.innerHTML = 'Vælg en scene og et trigger i venstre side…';
+        codeTextEl.value = '';
+        return;
+      }
+
+      const trig = state.triggers[scene]?.[id];
+      if (!trig) {
+        inspectorEl.innerHTML = 'Trigger ikke fundet.';
+        return;
+      }
+
+      inspectorEl.innerHTML = '';
+
+      const section1 = document.createElement('div');
+      section1.className = 'inspector-section';
+
+      // ID (readonly)
+      const idRow = document.createElement('div');
+      idRow.className = 'field-row';
+      const idLabel = document.createElement('label');
+      idLabel.textContent = 'Trigger ID';
+      const idInput = document.createElement('input');
+      idInput.type = 'text';
+      idInput.value = id;
+      idInput.readOnly = true;
+      idInput.style.background = '#eee';
+      idRow.appendChild(idLabel);
+      idRow.appendChild(idInput);
+      section1.appendChild(idRow);
+
+      // Label
+      const labelRow = document.createElement('div');
+      labelRow.className = 'field-row';
+      const labelLabel = document.createElement('label');
+      labelLabel.textContent = 'Label';
+      const labelInput = document.createElement('input');
+      labelInput.type = 'text';
+      labelInput.value = trig.label || '';
+      labelInput.addEventListener('input', () => {
+        trig.label = labelInput.value;
+        setStatus('Label opdateret');
+      });
+      labelRow.appendChild(labelLabel);
+      labelRow.appendChild(labelInput);
+      section1.appendChild(labelRow);
+
+      // Type
+      const typeRow = document.createElement('div');
+      typeRow.className = 'field-row';
+      const typeLabel = document.createElement('label');
+      typeLabel.textContent = 'Type';
+      const typeSelect = document.createElement('select');
+      ['interact','proximity','click','event'].forEach(t => {
+        const opt = document.createElement('option');
+        opt.value = t;
+        opt.textContent = t;
+        typeSelect.appendChild(opt);
+      });
+      typeSelect.value = trig.type || 'interact';
+      typeSelect.addEventListener('change', () => {
+        trig.type = typeSelect.value;
+        renderSceneList(); // opdatér type-badge i venstre side
+        setStatus('Type opdateret');
+      });
+      typeRow.appendChild(typeLabel);
+      typeRow.appendChild(typeSelect);
+      section1.appendChild(typeRow);
+
+      // Object
+      const objRow = document.createElement('div');
+      objRow.className = 'field-row';
+      const objLabel = document.createElement('label');
+      objLabel.textContent = 'Object (type/id)';
+      const objInput = document.createElement('input');
+      objInput.type = 'text';
+      objInput.value = trig.object || '';
+      objInput.addEventListener('input', () => {
+        trig.object = objInput.value || undefined;
+        setStatus('Object opdateret');
+      });
+      objRow.appendChild(objLabel);
+      objRow.appendChild(objInput);
+      section1.appendChild(objRow);
+
+      // Distance
+      const distRow = document.createElement('div');
+      distRow.className = 'field-row';
+      const distLabel = document.createElement('label');
+      distLabel.textContent = 'Distance (tal eller udtryk)';
+      const distInput = document.createElement('input');
+      distInput.type = 'text';
+      distInput.value = trig.distance != null ? String(trig.distance) : '';
+      distInput.addEventListener('input', () => {
+        const val = distInput.value.trim();
+        if (val === '') {
+          delete trig.distance;
+        } else if (!isNaN(Number(val))) {
+          trig.distance = Number(val);
+        } else {
+          trig.distance = val; // f.eks. "GAME_CONSTANTS.PHYSICS.BEAR_CHASE_DISTANCE"
+        }
+        setStatus('Distance opdateret');
+      });
+      distRow.appendChild(distLabel);
+      distRow.appendChild(distInput);
+      section1.appendChild(distRow);
+
+      inspectorEl.appendChild(section1);
+
+      // Conditions
+      const section2 = document.createElement('div');
+      section2.className = 'inspector-section';
+
+      const condRow = document.createElement('div');
+      condRow.className = 'field-row';
+      const condLabel = document.createElement('label');
+      condLabel.textContent = 'Conditions (JSON)';
+      const condArea = document.createElement('textarea');
+      condArea.value = trig.conditions ? JSON.stringify(trig.conditions, null, 2) : '';
+      condArea.addEventListener('change', () => {
+        const txt = condArea.value.trim();
+        if (!txt) {
+          delete trig.conditions;
+          setStatus('Conditions fjernet');
+          return;
+        }
+        try {
+          const obj = JSON.parse(txt);
+          trig.conditions = obj;
+          setStatus('Conditions opdateret');
+        } catch (e) {
+          alert('Kunne ikke parse JSON i conditions: ' + e.message);
+        }
+      });
+      condRow.appendChild(condLabel);
+      condRow.appendChild(condArea);
+      section2.appendChild(condRow);
+
+      const hint = document.createElement('div');
+      hint.className = 'small';
+      hint.textContent = 'Eksempler: {"requiresItem":"dynamite","gameActive":false}';
+      section2.appendChild(hint);
+
+      inspectorEl.appendChild(section2);
+    }
+
+    function loadCode() {
+      const scene = state.currentScene;
+      const id = state.currentTriggerId;
+      if (!scene || !id) {
+        codeTextEl.value = '';
+        return;
+      }
+      const trig = state.triggers[scene]?.[id];
+      if (!trig) return;
+
+      if (typeof trig.onTrigger === 'function') {
+        codeTextEl.value = trig.onTrigger.toString();
+      } else {
+        codeTextEl.value = `function onTrigger(ctx, api) {\n  // TODO: implement\n}\n`;
+      }
+    }
+
+    function applyCode() {
+      const scene = state.currentScene;
+      const id = state.currentTriggerId;
+      if (!scene || !id) {
+        alert('Vælg et trigger først.');
+        return;
+      }
+      const trig = state.triggers[scene]?.[id];
+      if (!trig) {
+        alert('Trigger ikke fundet.');
+        return;
+      }
+      const src = codeTextEl.value.trim();
+      if (!src) {
+        alert('Kodefeltet er tomt.');
+        return;
+      }
+
+      try {
+        // Vi wrapper i () så function-declaration bliver et expression
+        const fn = eval('(' + src + ')');
+        if (typeof fn !== 'function') {
+          throw new Error('Koden resulterede ikke i en function');
+        }
+        trig.onTrigger = fn;
+        setStatus('onTrigger opdateret');
+      } catch (e) {
+        console.error(e);
+        alert('Fejl i onTrigger-koden: ' + e.message);
+      }
+    }
+
+    // --- Export triggers.js ---
+
+    function serializeTriggersToSource(triggersObj) {
+      const src = [
+        '// Generated by trigger-editor.html',
+        '// Do not edit by hand unless you know what you are doing.',
+        '',
+        'export const triggers = ' + serializeValue(triggersObj, 0) + ';',
+        ''
+      ].join('\n');
+      return src;
+    }
+
+    function isIdentifier(str) {
+      return /^[A-Za-z_$][A-Za-z0-9_$]*$/.test(str);
+    }
+
+    function serializeValue(value, indentLevel) {
+      const indent = '  '.repeat(indentLevel);
+
+      if (value === null) return 'null';
+
+      const t = typeof value;
+      if (t === 'string') {
+        return JSON.stringify(value);
+      }
+      if (t === 'number' || t === 'boolean') {
+        return String(value);
+      }
+      if (t === 'function') {
+        // Brug function.toString() direkte
+        return value.toString();
+      }
+      if (Array.isArray(value)) {
+        if (value.length === 0) return '[]';
+        const innerIndent = '  '.repeat(indentLevel + 1);
+        const parts = ['['];
+        value.forEach((v, idx) => {
+          const comma = idx === value.length - 1 ? '' : ',';
+          parts.push(innerIndent + serializeValue(v, indentLevel + 1) + comma);
+        });
+        parts.push(indent + ']');
+        return parts.join('\n');
+      }
+      if (t === 'object') {
+        const keys = Object.keys(value);
+        if (keys.length === 0) return '{}';
+        const innerIndent = '  '.repeat(indentLevel + 1);
+        const parts = ['{'];
+        keys.forEach((k, idx) => {
+          const v = value[k];
+          const comma = idx === keys.length - 1 ? '' : ',';
+          const keyStr = isIdentifier(k) ? k : JSON.stringify(k);
+          const valStr = serializeValue(v, indentLevel + 1);
+          parts.push(innerIndent + keyStr + ': ' + valStr + comma);
+        });
+        parts.push(indent + '}');
+        return parts.join('\n');
+      }
+
+      // fallback
+      return JSON.stringify(value);
+    }
+
+    function exportTriggers() {
+      try {
+        const src = serializeTriggersToSource(state.triggers);
+        const blob = new Blob([src], { type: 'text/javascript;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'triggers.js';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        setStatus('triggers.js downloadet');
+      } catch (e) {
+        console.error(e);
+        alert('Kunne ikke eksportere triggers: ' + e.message);
+      }
+    }
+
+    // --- Add trigger (simple MVP) ---
+
+    function addTriggerToCurrentScene() {
+      const scene = state.currentScene;
+      if (!scene) {
+        alert('Vælg en scene først (fx greenland/oval/kremlin/epstein/global).');
+        return;
+      }
+      const id = prompt('Nyt trigger-id (eks: my_new_trigger):');
+      if (!id) return;
+
+      const sceneTriggers = state.triggers[scene] || (state.triggers[scene] = {});
+      if (sceneTriggers[id]) {
+        alert('Der findes allerede et trigger med det id i scenen.');
+        return;
+      }
+
+      sceneTriggers[id] = {
+        label: 'New trigger',
+        type: 'interact',
+        object: '',
+        onTrigger(ctx, api) {
+          api.say('trump', 'New trigger fired!', 1200);
+        }
+      };
+
+      state.currentTriggerId = id;
+      renderSceneList();
+      renderInspector();
+      loadCode();
+    }
+
+    // --- Game preview ---
+
+    function loadGame() {
+      const url = gameUrlEl.value.trim();
+      if (!url) {
+        alert('Skriv en URL eller sti til dit spil (fx Trumpspillet.html)');
+        return;
+      }
+      gameFrameEl.src = url;
+    }
+
+    // --- Event wiring ---
+
+    addTriggerBtn.addEventListener('click', addTriggerToCurrentScene);
+    loadGameBtn.addEventListener('click', loadGame);
+    exportBtn.addEventListener('click', exportTriggers);
+    applyCodeBtn.addEventListener('click', applyCode);
+
+    // Init
+    // Prøv at vælge første ikke-empty scene
+    const sceneNames = Object.keys(state.triggers);
+    const firstScene = sceneNames.find(name => Object.keys(state.triggers[name] || {}).length > 0);
+    if (firstScene) {
+      state.currentScene = firstScene;
+      const firstTrigId = Object.keys(state.triggers[firstScene])[0];
+      state.currentTriggerId = firstTrigId;
+    }
+
+    renderSceneList();
+    renderInspector();
+    loadCode();
+  </script>
+</body>
+</html>
